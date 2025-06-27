@@ -1,7 +1,10 @@
 package com.eightsleep.eightandroidinterview
 
+/**
+ * The three phases during one sleep session.
+ */
 enum class SleepPhase {
-    BEDTIME,
-    NIGHT,
-    MORNING
+    BEDTIME, // when the user goes to bed
+    NIGHT, // the first few hours of that night's sleep
+    MORNING // the last hours of sleep before waking up
 }
