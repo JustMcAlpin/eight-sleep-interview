@@ -6,5 +6,5 @@ package com.eightsleep.eightandroidinterview
 enum class SleepPhase {
     BEDTIME, // when the user goes to bed
     NIGHT, // the first few hours of that night's sleep
-    MORNING // the last hours of sleep before waking up
+    DAWN // the last hours of sleep before waking up
 }

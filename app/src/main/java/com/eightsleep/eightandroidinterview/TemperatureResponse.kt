@@ -10,7 +10,7 @@ data class TemperatureResponse(
 
 /**
  * Represents a temperature setting for a specific sleep phase.
- * @param phase The [SleepPhase] (BEDTIME, NIGHT, MORNING).
+ * @param phase The [SleepPhase] (BEDTIME, NIGHT, DAWN).
  * @param temperature Integer representing the temperature setting, ranging from -10(coldest)..0(neutral)..10(hottest).
  */
 data class PhaseResponse(

@@ -1,5 +1,5 @@
 ## The Temperature Card
-There are 3 temperature phases in one night's sleep session: Bedtime, Night, and Dawn
+There are 3 temperature phases in one night's sleep session: Bedtime, Night, and Dawn.  
 The temperature card shows the user's preset temperatures for each phase at the top of the card, with the current phase's temperature shown in the center of the card.  
 
 ![temp_off](images/temperature_card_off.png)
