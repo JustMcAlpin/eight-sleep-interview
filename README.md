@@ -1,7 +1,17 @@
 ## The Temperature Card
-There are 3 temperature phases in one night's sleep session: Bedtime, Night, and Dawn.  
-The temperature card shows the user's preset temperatures for each phase at the top of the card, with the current phase's temperature shown in the center of the card.  
-There are 5 card states: On, Off, Idle, Cooling, and Warming.  
+There are 3 temperature phases in one night's sleep session: 
+- Bedtime
+- Night
+- Dawn
+
+The phases are shown at the top of the card with their respective temperature settings.  
+The currently selected phase's temperature is shown in the center of the card in large font.
+
+There are 4 card states:
+- Off
+- Idle
+- Cooling
+- Warming
 
 ![temp_off](images/temperature_card_off.png)
 ![temp_cooling](images/temperature_card_cooling.png)
