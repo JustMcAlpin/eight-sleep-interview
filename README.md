@@ -23,13 +23,11 @@ The temperature card shows the user's preset temperatures for each phase at the 
 1) Given the UX specifications above, build a temperature card based off of the reference images above.
 2) Create a mock service that responds to user inputs, adding an artificial delay to simulate network latency 
 3) Show your best work and your ability to think through the intentional ambiguity of the bare project.
-4) Add some character to your submission by showcasing your strengths (arch, animations, tests, etc)
 
 Response data classes are provided, as well as some commonly used android libraries.  Feel free to import any libraries that you need.  Everything else is left open to your interpretation.
 
-## Submission Process:
+## Work and Submission Process:
 1) Clone this repo into a PRIVATE repo under your account.
-2) Grant access to your repo with your hiring manager.
+2) Grant access to your repo with @vincewkao @mzdon and @cal-8s.
 3) As you work, commit incremental changes that show your work and thought process.
 4) Email your recruiter to let them know when your submission is ready for review.
-
