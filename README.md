@@ -15,6 +15,10 @@ The temperature card shows the user's preset temperatures for each phase at the 
 6) Ignore the "Now" labels under the phases in the images (the phases should always be named "Bedtime", "Night", and "Dawn"
 7) Draw the > Chevron at the top of the card, but it's not necessary to add any click handling for it.
 
+## Figma File
+* https://www.figma.com/design/eCymjharIRGffdUPgfKS5d/Tempereature-card
+* Password is: 8Sleep
+
 ## Task:
 1) Given the UX specifications above, build a temperature card based off of the reference images above.
 2) Create a mock service that responds to user inputs, adding an artificial delay to simulate network latency 
