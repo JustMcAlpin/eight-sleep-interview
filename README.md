@@ -43,3 +43,9 @@ The architecture and app design is left open to your interpretation.
 2) Grant access to your repo with @vincewkao @mzdon and @cal-8s.
 3) As you work, commit incremental changes that show your work and thought process.
 4) Email your recruiter to let them know when your submission is ready for review.
+
+## 📸 Final Preview
+Below is a preview of the final implementation. The UI is fully interactive and responsive, with temperature-based visual feedback, disabled states, and a confirmation flow that matches Eight Sleep’s UX guidelines.
+
+https://github.com/user-attachments/assets/71483abb-7605-4b73-baf4-7b1f3c3b8bb9
+
