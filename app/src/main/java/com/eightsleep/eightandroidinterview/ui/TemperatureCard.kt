@@ -26,14 +26,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 
 /* tweakable underline widths */
-private val UNDERLINE_SIDE = 48.dp    // Bedtime / Dawn
-private val UNDERLINE_CENTER = 92.dp  // Night (centre)
+private val UNDERLINE_SIDE = 48.dp   // Bedtime / Dawn
+private val UNDERLINE_CENTER = 92.dp   // Night
 
 /* enums */
 enum class TemperaturePhase { BEDTIME, NIGHT, DAWN }
 enum class CardState { OFF, IDLE, COOLING, WARMING }
 
-/* Figma colour palette */
+/* Figma palette */
 private val tempColors = mapOf(
     5 to Color(0xFFDD4144), 4 to Color(0xFFD94F51), 3 to Color(0xFFD65A61),
     2 to Color(0xFFD3647C), 1 to Color(0xFFD06F8A), 0 to Color(0xFFB27FCA),
@@ -41,15 +41,15 @@ private val tempColors = mapOf(
     -4 to Color(0xFF4F7FFF), -5 to Color(0xFF3A70FE)
 )
 private fun colourFor(v: Int) = tempColors[v.coerceIn(-5, 5)]!!
-private fun miniTint(v: Int)  = colourFor(v).copy(alpha = .70f)
+private fun miniTint(v: Int) = colourFor(v).copy(alpha = .70f)
 
-/* circular ± button */
+/* circular ± helper */
 @Composable
 private fun CircleButton(
     modifier: Modifier = Modifier,
-    enabled : Boolean,
-    onClick : () -> Unit,
-    icon    : @Composable () -> Unit
+    enabled: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
 ) {
     Box(
         modifier
@@ -60,38 +60,41 @@ private fun CircleButton(
     ) { IconButton(onClick = onClick, enabled = enabled) { icon() } }
 }
 
-/* ─────────────────── Temperature Card ─────────────────── */
+/* ────────────────── Temperature Card ────────────────── */
 @Composable
 fun TemperatureCard(
-    phase          : TemperaturePhase,
-    temps          : Map<TemperaturePhase, Int>,
-    cardState      : CardState,
+    phase: TemperaturePhase,
+    temps: Map<TemperaturePhase, Int>,
+    cardState: CardState,
     onPhaseSelected: (TemperaturePhase) -> Unit,
-    onAdjust       : (Int) -> Unit,
-    onToggleOff    : () -> Unit
+    onAdjust: (Int) -> Unit,
+    onToggleOff: () -> Unit
 ) {
     val centreTemp = temps[phase] ?: 0
-    val baseGlow   = if (cardState == CardState.OFF) Color.Transparent else colourFor(centreTemp)
-    val glowAlpha  by animateFloatAsState(baseGlow.alpha)
-    val glowColour = baseGlow.copy(alpha = glowAlpha)
+
+    /* radial glow */
+    val targetGlow = if (cardState == CardState.OFF) Color.Transparent else colourFor(centreTemp)
+    val animatedAlpha by animateFloatAsState(targetGlow.alpha)
+    val glowColour = targetGlow.copy(alpha = animatedAlpha)
 
     val controlsEnabled = cardState != CardState.OFF
-    val isChanging      = cardState == CardState.WARMING || cardState == CardState.COOLING
+    val isChanging = cardState == CardState.COOLING || cardState == CardState.WARMING
 
     Card(
         modifier = Modifier.size(260.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color(0xFF262626))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF262626))
     ) {
         Box(Modifier.fillMaxSize()) {
 
-            /* ── Foreground UI ─────────────────────────────── */
+            /* ─── Foreground UI ─── */
             Column(
                 Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp)
                     .zIndex(1f)
             ) {
-                /* header */
+
+                /* Header */
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -99,14 +102,14 @@ fun TemperatureCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "TEMPERATURE",
+                        text = "TEMPERATURE",
                         color = Color.White,
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = "open",
+                        contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(8.dp)
                     )
@@ -121,7 +124,7 @@ fun TemperatureCard(
                 )
                 Spacer(Modifier.height(8.dp))
 
-                /* phases */
+                /* Phase tabs */
                 Row(Modifier.fillMaxWidth()) {
                     TemperaturePhase.values().forEach { p ->
                         val selected = p == phase
@@ -138,14 +141,8 @@ fun TemperatureCard(
 
                             Spacer(Modifier.height(6.dp))
 
-                            val width = if (p == TemperaturePhase.NIGHT)
-                                UNDERLINE_CENTER else UNDERLINE_SIDE
-                            Box(
-                                Modifier
-                                    .height(1.dp)
-                                    .width(width)
-                                    .background(Color(0x885A5A5A))
-                            )
+                            val w = if (p == TemperaturePhase.NIGHT) UNDERLINE_CENTER else UNDERLINE_SIDE
+                            Box(Modifier.height(1.dp).width(w).background(Color(0x885A5A5A)))
 
                             Spacer(Modifier.height(6.dp))
 
@@ -158,84 +155,95 @@ fun TemperatureCard(
                     }
                 }
 
-                /* banner */
-                if (isChanging) {
-                    Text(
-                        if (cardState == CardState.WARMING) "WARMING TO" else "COOLING TO",
-                        color  = Color.White,
-                        style  = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(top = 6.dp, bottom = 2.dp)
-                    )
-                } else Spacer(Modifier.height(16.dp))
-
-                /* centre + controls */
+                /* Centre value & controls */
                 Box(
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .wrapContentHeight()
                         .padding(horizontal = 16.dp)
-                        .clickable(                           // ripple-less click
+                        .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication        = null
+                            indication = null
                         ) { onToggleOff() }
                 ) {
+                    /* − button */
                     CircleButton(
                         modifier = Modifier.align(Alignment.CenterStart),
-                        enabled  = controlsEnabled,
-                        onClick  = { onAdjust(-1) }
+                        enabled = controlsEnabled,
+                        onClick = { onAdjust(-1) }
                     ) {
-                        Icon(Icons.Filled.Remove, null,
+                        Icon(
+                            Icons.Filled.Remove,
+                            contentDescription = null,
                             tint = if (controlsEnabled) Color.White else Color.Gray,
-                            modifier = Modifier.size(26.dp))
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
 
-                    val label = when {
+                    val centreLabel = when {
                         cardState == CardState.OFF -> "OFF"
-                        centreTemp > 0             -> "+$centreTemp"
-                        else                       -> centreTemp.toString()
+                        centreTemp > 0 -> "+$centreTemp"
+                        else -> centreTemp.toString()
                     }
+
                     Column(
                         Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(label,
+                        if (isChanging) {
+                            Text(
+                                text = if (cardState == CardState.WARMING) "WARMING TO" else "COOLING TO",
+                                color = Color.White.copy(alpha = .25f),
+                                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
+                        Text(
+                            centreLabel,
                             color = Color.White,
-                            style = MaterialTheme.typography.displayMedium)
-                        if (cardState == CardState.OFF) {
-                            Spacer(Modifier.height(8.dp))
-                            Text("TAP TO TURN ON",
-                                color = Color.White.copy(alpha = .6f),
-                                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp))
+                            style = MaterialTheme.typography.displayMedium
+                        )
+
+                        when (cardState) {
+                            CardState.OFF -> {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "TAP TO TURN ON",
+                                    color = Color.White.copy(alpha = .6f),
+                                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp)
+                                )
+                            }
+                            CardState.COOLING, CardState.WARMING -> {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "CURRENTLY AT ${temps[phase] ?: 0}",
+                                    color = Color.White.copy(alpha = .25f),
+                                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp)
+                                )
+                            }
+                            else -> {}
                         }
                     }
 
+                    /* + button */
                     CircleButton(
                         modifier = Modifier.align(Alignment.CenterEnd),
-                        enabled  = controlsEnabled,
-                        onClick  = { onAdjust(+1) }
+                        enabled = controlsEnabled,
+                        onClick = { onAdjust(+1) }
                     ) {
-                        Icon(Icons.Filled.Add, null,
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = null,
                             tint = if (controlsEnabled) Color.White else Color.Gray,
-                            modifier = Modifier.size(26.dp))
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
                 }
-
-                /* CURRENTLY AT */
-                if (isChanging) {
-                    Text(
-                        "CURRENTLY AT ${temps[phase] ?: 0}",
-                        color  = Color.White.copy(alpha = .6f),
-                        style  = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(bottom = 8.dp)
-                    )
-                } else Spacer(Modifier.height(8.dp))
             }
 
-            /* ── Glow layer ─────────────────────────────────── */
+            /* ─── Radial glow ─── */
             Box(
                 Modifier
                     .matchParentSize()
@@ -243,7 +251,7 @@ fun TemperatureCard(
                     .drawWithCache {
                         val radius = size.height * 0.8f
                         val centre = Offset(size.width / 2f, size.height)
-                        val brush  = Brush.radialGradient(
+                        val brush = Brush.radialGradient(
                             listOf(glowColour, Color.Transparent),
                             centre, radius
                         )
@@ -254,21 +262,21 @@ fun TemperatureCard(
     }
 }
 
-/* preview */
+/* Preview */
 @Preview(showBackground = true)
 @Composable
 fun TemperaturePreview() {
     val demo = mapOf(
         TemperaturePhase.BEDTIME to -2,
-        TemperaturePhase.NIGHT   to 0,
-        TemperaturePhase.DAWN    to 5
+        TemperaturePhase.NIGHT to 0,
+        TemperaturePhase.DAWN to 4
     )
     TemperatureCard(
-        phase           = TemperaturePhase.BEDTIME,
-        temps           = demo,
-        cardState       = CardState.IDLE,
+        phase = TemperaturePhase.BEDTIME,
+        temps = demo,
+        cardState = CardState.WARMING,
         onPhaseSelected = {},
-        onAdjust        = {},
-        onToggleOff     = {}
+        onAdjust = {},
+        onToggleOff = {}
     )
 }
