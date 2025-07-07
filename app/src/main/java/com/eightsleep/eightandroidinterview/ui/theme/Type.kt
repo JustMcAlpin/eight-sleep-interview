@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.sp
 /**  Helvetica everywhere, Oswald only for the big center number  */
 val AppTypography = Typography(
     /* small labels (“Now”, “Night”, etc.) */
-    labelSmall  = TextStyle(fontFamily = Helvetica, fontSize = 12.sp),
+    labelSmall  = TextStyle(fontFamily = Helvetica, fontSize = 8.sp),
     labelMedium = TextStyle(fontFamily = Helvetica, fontSize = 14.sp),
 
     /* top-row mini numbers (-2, +4) */
