@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.eightsleep.eightandroidinterview.ui.TemperatureCard
 import com.eightsleep.eightandroidinterview.ui.theme.EightAndroidInterviewTheme
-import com.eightsleep.eightandroidinterview.ui.TemperatureCardPreview
 
 class MainActivity : ComponentActivity() {
 
