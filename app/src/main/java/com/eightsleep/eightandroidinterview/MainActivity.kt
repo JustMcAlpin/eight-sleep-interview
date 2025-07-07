@@ -28,9 +28,9 @@ class MainActivity : ComponentActivity() {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
                     TemperatureCard(
-                        phase      = vm.selected.value,
-                        temp       = vm.temps[vm.selected.value] ?: 0,
-                        cardState  = vm.cardState.value,
+                        phase          = vm.selected.value,
+                        temps          = vm.temps,                 // ← add this line
+                        cardState      = vm.cardState.value,
                         onPhaseSelected = vm::selectPhase,
                         onAdjust        = vm::adjust,
                         onToggleOff     = vm::toggleOff
