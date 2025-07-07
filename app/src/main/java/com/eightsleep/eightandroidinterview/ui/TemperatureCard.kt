@@ -11,15 +11,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +29,14 @@ import androidx.compose.ui.zIndex
 private val UNDERLINE_SIDE   = 48.dp   // Bedtime / Dawn
 private val UNDERLINE_CENTER = 92.dp   // Night
 
+/* fixed banner slot height */
+private val BannerHeight = 20.dp
+
+private const val CARD_MAX = 260
+private const val FIGMA_W  = 361f
+private const val FIGMA_H  = 338f
+private val FIGMA_RATIO =  FIGMA_W / FIGMA_H
+
 /* enums */
 enum class TemperaturePhase { BEDTIME, NIGHT, DAWN }
 enum class CardState       { OFF, IDLE, COOLING, WARMING }
@@ -37,8 +45,8 @@ enum class CardState       { OFF, IDLE, COOLING, WARMING }
 private val tempColors = mapOf(
     5  to Color(0xFFDD4144), 4 to Color(0xFFD94F51), 3 to Color(0xFFD65A61),
     2  to Color(0xFFD3647C), 1 to Color(0xFFD06F8A), 0 to Color(0xFFB27FCA),
-    -1  to Color(0xFF788CDD), -2 to Color(0xFF6484DD), -3 to Color(0xFF5075D8),
-    -4  to Color(0xFF4F7FFF), -5 to Color(0xFF3A70FE)
+    -1 to Color(0xFF788CDD), -2 to Color(0xFF6484DD), -3 to Color(0xFF5075D8),
+    -4 to Color(0xFF4F7FFF), -5 to Color(0xFF3A70FE)
 )
 private fun colourFor(v: Int) = tempColors[v.coerceIn(-5, 5)]!!
 private fun miniTint(v: Int)  = colourFor(v).copy(alpha = .70f)
@@ -53,7 +61,7 @@ private fun CircleButton(
 ) {
     Box(
         modifier
-            .size(52.dp)
+            .size(40.dp)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = .10f)),
         contentAlignment = Alignment.Center
@@ -61,6 +69,7 @@ private fun CircleButton(
 }
 
 /* ────────────────── Temperature Card ────────────────── */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemperatureCard(
     phase        : TemperaturePhase,
@@ -71,19 +80,25 @@ fun TemperatureCard(
     onAdjust       : (Int) -> Unit,
     onToggleOff    : () -> Unit
 ) {
+    /* ─── bottom‑sheet plumbing ─── */
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     val targetTemp  = temps[phase]        ?: 0
     val sensedTemp  = currentTemps[phase] ?: 0
 
     /* radial glow based on target */
     val targetGlow   = if (cardState == CardState.OFF) Color.Transparent else colourFor(targetTemp)
-    val animatedAlpha by animateFloatAsState(targetGlow.alpha)
+    val animatedAlpha by animateFloatAsState(targetGlow.alpha, label = "glowAlpha")
     val glowColour   = targetGlow.copy(alpha = animatedAlpha)
 
     val controlsEnabled = cardState != CardState.OFF
     val isChanging      = cardState == CardState.COOLING || cardState == CardState.WARMING
 
     Card(
-        modifier = Modifier.size(260.dp),
+        modifier = Modifier
+            .width(CARD_MAX.dp)            // pin width
+            .aspectRatio(FIGMA_RATIO),     // height ≈ 243 dp
         colors   = CardDefaults.cardColors(containerColor = Color(0xFF262626))
     ) {
         Box(Modifier.fillMaxSize()) {
@@ -113,7 +128,9 @@ fun TemperatureCard(
                         Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(8.dp)
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clearAndSetSemantics {}   // decorative
                     )
                 }
 
@@ -164,11 +181,7 @@ fun TemperatureCard(
                         .weight(1f)
                         .fillMaxWidth()
                         .wrapContentHeight()
-                        .padding(horizontal = 16.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onToggleOff() }
+                        .padding(horizontal = 32.dp)
                 ) {
                     /* − button */
                     CircleButton(
@@ -176,35 +189,73 @@ fun TemperatureCard(
                         enabled  = controlsEnabled,
                         onClick  = { onAdjust(-1) }
                     ) {
-                        Icon(Icons.Filled.Remove, contentDescription = null, tint = if (controlsEnabled) Color.White else Color.Gray, modifier = Modifier.size(26.dp))
+                        Icon(
+                            Icons.Filled.Remove,
+                            contentDescription = "Decrease temperature",
+                            tint = if (controlsEnabled) Color.White else Color.Gray,
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
 
                     val centreLabel = when {
                         cardState == CardState.OFF -> "OFF"
-                        targetTemp > 0            -> "+$targetTemp"
-                        else                      -> targetTemp.toString()
+                        targetTemp > 0             -> "+$targetTemp"
+                        else                       -> targetTemp.toString()
                     }
+                    val centreColor = if (cardState == CardState.OFF)
+                        Color.White.copy(alpha = .45f) else Color.White
 
-                    Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (isChanging) {
-                            Text(
-                                if (cardState == CardState.WARMING) "WARMING TO" else "COOLING TO",
-                                color = Color.White.copy(alpha = .25f),
-                                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
+                    /* keep banners from shifting number */
+                    Column(
+                        Modifier
+                            .align(Alignment.Center)
+                            .testTag("CenterValue")             // <-- for UI test
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                if (cardState == CardState.OFF) {
+                                    onToggleOff()             // OFF → turn ON (no sheet)
+                                } else {
+                                    showSheet = true          // show confirm to turn OFF
+                                }
+                            },
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // top banner slot
+                        Box(Modifier.height(BannerHeight)) {
+                            if (isChanging) {
+                                Text(
+                                    if (cardState == CardState.WARMING) "WARMING TO" else "COOLING TO",
+                                    color  = Color.White.copy(alpha = .25f),
+                                    style  = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
                         }
 
-                        Text(centreLabel, color = Color.White, style = MaterialTheme.typography.displayMedium)
+                        // big number / OFF
+                        Text(centreLabel, color = centreColor, style = MaterialTheme.typography.displayMedium)
 
-                        if (isChanging) {
-                            val sensedLabel = if (sensedTemp > 0) "+$sensedTemp" else sensedTemp.toString()
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "CURRENTLY AT $sensedLabel",
-                                color = Color.White.copy(alpha = .25f),
-                                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp)
-                            )
+                        // bottom banner slot
+                        Box(Modifier.height(BannerHeight)) {
+                            when {
+                                cardState == CardState.OFF -> Text(
+                                    "TAP TO TURN ON",
+                                    color  = Color.White.copy(alpha = .35f),
+                                    style  = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                                isChanging -> {
+                                    val sensedLabel = if (sensedTemp > 0) "+$sensedTemp" else sensedTemp.toString()
+                                    Text(
+                                        "CURRENTLY AT $sensedLabel",
+                                        color  = Color.White.copy(alpha = .25f),
+                                        style  = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.8.sp),
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -214,7 +265,12 @@ fun TemperatureCard(
                         enabled  = controlsEnabled,
                         onClick  = { onAdjust(+1) }
                     ) {
-                        Icon(Icons.Filled.Add, contentDescription = null, tint = if (controlsEnabled) Color.White else Color.Gray, modifier = Modifier.size(26.dp))
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = "Increase temperature",
+                            tint = if (controlsEnabled) Color.White else Color.Gray,
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
                 }
             }
@@ -233,29 +289,39 @@ fun TemperatureCard(
             )
         }
     }
+
+    /* Bottom‑sheet */
+    if (showSheet) {
+        OffConfirmationSheet(
+            tint      = colourFor(targetTemp),
+            onConfirm = {
+                onToggleOff()
+                showSheet = false
+            },
+            onDismiss = { showSheet = false }
+        )
+    }
 }
 
 /* Preview */
 @Preview(showBackground = true)
 @Composable
 fun TemperaturePreview() {
-    // demo maps for target (temps) and sensed (currentTemps)
-    val targetDemo = mapOf(
+    val target = mapOf(
         TemperaturePhase.BEDTIME to -2,
-        TemperaturePhase.NIGHT   to  0,
-        TemperaturePhase.DAWN    to  4
+        TemperaturePhase.NIGHT   to 0,
+        TemperaturePhase.DAWN    to 4
     )
-    val sensedDemo = mapOf(
-        TemperaturePhase.BEDTIME to -2,
+    val sensed = mapOf(
+        TemperaturePhase.BEDTIME to -3,
         TemperaturePhase.NIGHT   to -1,
-        TemperaturePhase.DAWN    to  2
+        TemperaturePhase.DAWN    to 2
     )
-
     TemperatureCard(
-        phase         = TemperaturePhase.BEDTIME,
-        temps         = targetDemo,       // targets
-        currentTemps  = sensedDemo,       // sensed
-        cardState     = CardState.WARMING,
+        phase           = TemperaturePhase.BEDTIME,
+        temps           = target,
+        currentTemps    = sensed,
+        cardState       = CardState.WARMING,
         onPhaseSelected = {},
         onAdjust        = {},
         onToggleOff     = {}

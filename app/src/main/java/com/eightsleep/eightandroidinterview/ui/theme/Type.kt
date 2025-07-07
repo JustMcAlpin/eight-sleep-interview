@@ -17,8 +17,7 @@ val AppTypography = Typography(
     /* big centre value / “OFF” */
     displayMedium = TextStyle(
         fontFamily = Oswald,
-        fontSize   = 56.sp,
+        fontSize   = 40.sp,
         fontWeight = FontWeight.Normal
     )
-    // add more roles later if you need them
 )

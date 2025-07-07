@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     TemperatureCard(
                         phase           = vm.selected.value,
                         temps           = vm.temps,          // target values
-                        currentTemps    = vm.currentTemps,   // sensed values  ← NEW
+                        currentTemps    = vm.currentTemps,   // sensed values
                         cardState       = vm.cardState.value,
                         onPhaseSelected = vm::selectPhase,
                         onAdjust        = vm::adjust,

@@ -7,6 +7,7 @@ import com.eightsleep.eightandroidinterview.ui.CardState
 import com.eightsleep.eightandroidinterview.ui.TemperaturePhase
 import com.eightsleep.eightandroidinterview.data.FakePadService
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 
@@ -35,21 +36,20 @@ class TempViewModel : ViewModel() {
         selected.value = p
     }
 
-    /** +/- buttons */
+    private var driftJob: Job? = null      // add at top
+
     fun adjust(delta: Int) {
-        if (cardState.value == CardState.OFF) return           // ignore when off
+        if (cardState.value == CardState.OFF) return
+        val newTemp = (temps[selected.value] ?: 0) + delta
+        if (newTemp !in -10..10) return
 
-        val current = temps[selected.value] ?: 0
-        val newTemp = current + delta
-        if (newTemp !in -10..10) return                        // clamp range
-
-        temps[selected.value] = newTemp                        // store new target
-
-        // set banner state
+        temps[selected.value] = newTemp
         cardState.value = if (delta > 0) CardState.WARMING else CardState.COOLING
 
-        simulateHardware(selected.value)   // ← START the drift loop!
+        driftJob?.cancel()                 // stop any previous drift
+        simulateHardware(selected.value)   // start fresh
     }
+
 
     /** Centre label tap toggles ON ⇄ OFF. */
     fun toggleOff() {
@@ -58,18 +58,16 @@ class TempViewModel : ViewModel() {
     }
 
     private fun simulateHardware(phase: TemperaturePhase) {
-        viewModelScope.launch {
-            val current = currentTemps[phase] ?: 0
+        driftJob = viewModelScope.launch {
+            var current = currentTemps[phase] ?: 0
             val target  = temps[phase]        ?: 0
 
-            val newTemp = FakePadService.nudge(current, target)
-            currentTemps[phase] = newTemp
-
-            if (newTemp == target) {
-                cardState.value = CardState.IDLE
-            } else {
-                simulateHardware(phase)          // keep nudging until equal
+            while (current != target) {
+                current = FakePadService.nudge(current, target)
+                currentTemps[phase] = current
             }
+            // reached target → idle
+            cardState.value = CardState.IDLE
         }
     }
 
